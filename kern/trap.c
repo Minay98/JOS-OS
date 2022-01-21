@@ -60,12 +60,48 @@ static const char *trapname(int trapno)
 }
 
 
+
+
+
 void
 trap_init(void)
 {
 	extern struct Segdesc gdt[];
 
 	// LAB 3: Your code here.
+	
+	extern void TRAPH_DIVIDE();
+	extern void TRAPH_DEBUG();
+	extern void TRAPH_NMI();
+	extern void TRAPH_BRKPT();
+	extern void TRAPH_OFLOW();
+	extern void TRAPH_BOUND();
+	extern void TRAPH_ILLOP();
+	extern void TRAPH_DEVICE();
+	extern void TRAPH_DBLFLT();
+	extern void TRAPH_TSS();
+	extern void TRAPH_SEGNP();
+	extern void TRAPH_STACK();
+	extern void TRAPH_GPFLT();
+	extern void TRAPH_PGFLT();
+	extern void TRAPH_SYSCALL();
+
+	SETGATE(idt[T_DIVIDE],0,GD_KT,TRAPH_DIVIDE,0);
+	SETGATE(idt[T_DEBUG],0,GD_KT,TRAPH_DEBUG,0);
+	SETGATE(idt[T_NMI],0,GD_KT,TRAPH_NMI,0);
+	SETGATE(idt[T_BRKPT],0,GD_KT,TRAPH_BRKPT,3);
+	SETGATE(idt[T_OFLOW],0,GD_KT,TRAPH_OFLOW,0);
+	SETGATE(idt[T_BOUND],0,GD_KT,TRAPH_BOUND,0);
+	SETGATE(idt[T_ILLOP],0,GD_KT,TRAPH_ILLOP,0);
+	SETGATE(idt[T_DEVICE],0,GD_KT,TRAPH_DEVICE,0);
+	SETGATE(idt[T_DBLFLT],0,GD_KT,TRAPH_DBLFLT,0);
+	SETGATE(idt[T_TSS],0,GD_KT,TRAPH_TSS,0);
+	SETGATE(idt[T_SEGNP],0,GD_KT,TRAPH_SEGNP,0);
+	SETGATE(idt[T_STACK],0,GD_KT,TRAPH_DIVIDE,0);
+	SETGATE(idt[T_GPFLT],0,GD_KT,TRAPH_GPFLT,0);
+	SETGATE(idt[T_PGFLT],0,GD_KT,TRAPH_PGFLT,0);
+	SETGATE(idt[T_SYSCALL],0,GD_KT,TRAPH_SYSCALL,3);
+
 	idt_pd.pd_lim = sizeof(idt)-1;
 	idt_pd.pd_base = (uint64_t)idt;
 	// Per-CPU setup
@@ -149,6 +185,16 @@ trap_dispatch(struct Trapframe *tf)
 {
 	// Handle processor exceptions.
 	// LAB 3: Your code here.
+	switch(tf->tf_trapno)
+	{
+		case T_PGFLT:	page_fault_handler(tf);
+				return;
+		case T_BRKPT:	monitor(tf);
+				return;
+		case T_SYSCALL:	
+				tf->tf_regs.reg_rax = syscall(tf->tf_regs.reg_rax,tf->tf_regs.reg_rdx,tf->tf_regs.reg_rcx,tf->tf_regs.reg_rbx, tf->tf_regs.reg_rdi, tf->tf_regs.reg_rsi);
+				return;
+}
 
 	// Unexpected trap: The user process or the kernel has a bug.
 	print_trapframe(tf);
@@ -211,6 +257,8 @@ page_fault_handler(struct Trapframe *tf)
 	// Handle kernel-mode page faults.
 
 	// LAB 3: Your code here.
+	if((tf->tf_cs & 3)==0)
+	panic("page fault is kernel mode");
 
 	// We've already handled kernel-mode exceptions, so if we get here,
 	// the page fault happened in user mode.
