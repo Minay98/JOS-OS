@@ -18,9 +18,14 @@
 #include <kern/cpu.h>
 #include <kern/spinlock.h>
 
-uint64_t end_debug;
+
+#include <kern/env.h>
+#include <kern/trap.h>
 
 static void boot_aps(void);
+
+uint64_t end_debug;
+
 
 
 
@@ -111,6 +116,7 @@ boot_aps(void)
 		while(c->cpu_status != CPU_STARTED)
 			;
 	}
+
 }
 
 // Setup code for APs
