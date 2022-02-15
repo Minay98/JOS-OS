@@ -93,6 +93,16 @@ trap_init(void)
 	extern void TRAPH_GPFLT();
 	extern void TRAPH_PGFLT();
 	extern void TRAPH_SYSCALL();
+	void TRAPH_floatingpointerror(void);
+	void TRAPH_alignmentcheck(void);
+	void TRAPH_machinecheck(void);
+	void TRAPH_simderror(void);
+	void TRAPH_timer(void);
+	void TRAPH_keyboard(void);
+	void TRAPH_serial(void);
+	void TRAPH_spurious(void);
+	void TRAPH_ide(void);
+	void TRAPH_err(void);
 
 	SETGATE(idt[T_DIVIDE],0,GD_KT,TRAPH_DIVIDE,0);
 	SETGATE(idt[T_DEBUG],0,GD_KT,TRAPH_DEBUG,0);
@@ -109,7 +119,12 @@ trap_init(void)
 	SETGATE(idt[T_GPFLT],0,GD_KT,TRAPH_GPFLT,0);
 	SETGATE(idt[T_PGFLT],0,GD_KT,TRAPH_PGFLT,0);
 	SETGATE(idt[T_SYSCALL],0,GD_KT,TRAPH_SYSCALL,3);
-
+	SETGATE(idt[IRQ_TIMER + IRQ_OFFSET], 0, GD_KT, TRAPH_timer, 0);
+	SETGATE(idt[IRQ_KBD + IRQ_OFFSET], 0, GD_KT, TRAPH_keyboard, 0);
+	SETGATE(idt[IRQ_SERIAL + IRQ_OFFSET], 0, GD_KT, TRAPH_serial, 0);
+    	SETGATE(idt[IRQ_SPURIOUS + IRQ_OFFSET], 0, GD_KT, TRAPH_spurious, 0);
+	SETGATE(idt[IRQ_OFFSET + IRQ_IDE], 0, GD_KT, TRAPH_ide, 0);
+        SETGATE(idt[IRQ_OFFSET + IRQ_ERROR], 0, GD_KT, TRAPH_err, 0);
 	idt_pd.pd_lim = sizeof(idt)-1;
 	idt_pd.pd_base = (uint64_t)idt;
 	// Per-CPU setup
@@ -147,13 +162,18 @@ trap_init_percpu(void)
 
 	// Setup a TSS so that we get the right stack
 	// when we trap to the kernel.
-	ts.ts_esp0 = KSTACKTOP;
+	//ts.ts_esp0 = KSTACKTOP;
+	thiscpu->cpu_ts.ts_esp0 = KSTACKTOP - ((thiscpu->cpu_id) * (KSTKSIZE+KSTKGAP));
 
 	// Initialize the TSS slot of the gdt.
-	SETTSS((struct SystemSegdesc64 *)((gdt_pd>>16)+40),STS_T64A, (uint64_t) (&ts),sizeof(struct Taskstate), 0);
+	//SETTSS((struct SystemSegdesc64 *)((gdt_pd>>16)+40),STS_T64A, (uint64_t) (&ts),sizeof(struct Taskstate), 0);
+	SETTSS((struct SystemSegdesc64*)(&gdt[(GD_TSS0>>3)+2*(thiscpu->cpu_id)]),STS_T64A,(uint64_t)(&thiscpu->cpu_ts),sizeof(struct 			Taskstate), 0);
+
 	// Load the TSS selector (like other segment selectors, the
 	// bottom three bits are special; we leave them 0)
-	ltr(GD_TSS0);
+	//ltr(GD_TSS0);
+	ltr(GD_TSS0+(((2*thiscpu->cpu_id)<<3) & (~0x7)));
+
 
 	// Load the IDT
 	lidt(&idt_pd);
@@ -242,7 +262,12 @@ trap_dispatch(struct Trapframe *tf)
 	// interrupt using lapic_eoi() before calling the scheduler!
 	// LAB 4: Your code here.
 
-
+	if(tf->tf_trapno == IRQ_OFFSET + IRQ_TIMER )
+        {
+                lapic_eoi();
+                sched_yield();
+                return;
+        }
 	// Unexpected trap: The user process or the kernel has a bug.
 	print_trapframe(tf);
 	if (tf->tf_cs == GD_KT)
@@ -281,6 +306,7 @@ trap(struct Trapframe *tf)
 		// Acquire the big kernel lock before doing any
 		// serious kernel work.
 		// LAB 4: Your code here.
+		lock_kernel();
 		assert(curenv);
 
 		// Garbage collect if current enviroment is a zombie
@@ -376,12 +402,49 @@ page_fault_handler(struct Trapframe *tf)
 	//   (the 'tf' variable points at 'curenv->env_tf').
 
 	// LAB 4: Your code here.
+	struct UTrapframe *user_frame;
 
+	uint64_t ex_top;
+
+
+
+	if(!(curenv->env_pgfault_upcall))
+	{
+		 cprintf("[%08x] user fault va %08x ip %08x\n",
+                 curenv->env_id, fault_va, tf->tf_rip);
+	         print_trapframe(tf);
+        	 env_destroy(curenv);
+	}
+	else
+	{
+		if(tf->tf_rsp <=UXSTACKTOP-1 && tf->tf_rsp >= (UXSTACKTOP-PGSIZE))
+		{
+			ex_top= tf->tf_rsp - sizeof(uint64_t);
+	                ex_top = ex_top-(sizeof(struct UTrapframe));
+		}
+		else
+		{
+			 ex_top = (uint64_t)UXSTACKTOP;
+			 ex_top = ex_top-(sizeof(struct UTrapframe));
+		}
+
+		user_mem_assert(curenv, (void *)ex_top, sizeof(struct UTrapframe), PTE_U|PTE_W|PTE_P);
+		user_frame=(struct UTrapframe*)ex_top;
+		user_frame->utf_fault_va=fault_va;
+        	user_frame->utf_err=tf->tf_err;
+		user_frame->utf_regs=tf->tf_regs;
+		user_frame->utf_rip=tf->tf_rip;
+		user_frame->utf_eflags=tf->tf_eflags;
+		user_frame->utf_rsp=tf->tf_rsp;
+		tf->tf_rsp=ex_top;
+        	tf->tf_rip = (uint64_t)curenv->env_pgfault_upcall;
+		env_run(curenv);
+	}
 
 	// Destroy the environment that caused the fault.
-	cprintf("[%08x] user fault va %08x ip %08x\n",
+	/*cprintf("[%08x] user fault va %08x ip %08x\n",
 		curenv->env_id, fault_va, tf->tf_rip);
 	print_trapframe(tf);
-	env_destroy(curenv);
+	env_destroy(curenv);*/
 }
 

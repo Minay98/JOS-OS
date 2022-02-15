@@ -67,18 +67,28 @@ call *%rax
 // ways as registers become unavailable as scratch space.
 //
 // LAB 4: Your code here.
-
+add $8, %rsp  					//  fault_va
+add $8, %rsp 					//  error code
+movq %rsp, %rax					// save  top of exception stack
+movq 136(%rsp), %rbx				// trap time rsp
+movq 120(%rsp), %rcx				// trap time rip
+movq %rbx, %rsp					// move to trap time rsp
+pushq %rcx
     // Restore the trap-time registers.  After you do this, you
     // can no longer modify any general-purpose registers.
     // LAB 4: Your code here.
-
+movq %rax, %rsp                                 // go back to the exception stack
+subq $8, 136(%rsp)  				// update this stack for the push we did
+POPA_	
     // Restore eflags from the stack.  After you do this, you can
     // no longer use arithmetic operations or anything else that
     // modifies eflags.
     // LAB 4: Your code here.
-
+add $8, %rsp					//skip to the eflags value in the stack
+popfq	
     // Switch back to the adjusted trap-time stack.
     // LAB 4: Your code here.
-
+popq %rsp					// switch back to the trap time stack
     // Return to re-execute the instruction that faulted.
     // LAB 4: Your code here.
+ret
