@@ -7,16 +7,14 @@
 #include <inc/assert.h>
 #include <inc/x86.h>
 
-
 #include <kern/console.h>
 #include <kern/monitor.h>
 #include <kern/dwarf.h>
 #include <kern/kdebug.h>
 #include <kern/dwarf_api.h>
+#include <kern/trap.h>
 
 #define CMDBUF_SIZE	80	// enough for one VGA text line
-
-
 
 
 struct Command {
@@ -64,40 +62,6 @@ int
 mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 {
 	// Your code here.
-  	// This function is coming from inc/x86
-	uint64_t	*rbp_pointer;	  
-	rbp_pointer = (uint64_t*)read_rbp();
-	// This structure is defined in kern/kdebug
-	struct Ripdebuginfo info;
-	// This function is coming from inc/x86
-	uint64_t rip_pointer;
-	read_rip(rip_pointer);
-	int i;
-	cprintf("Stack backtrace:\n");
-	while (rbp_pointer) {
-		// This function is defined in kern/kdebug
-		// debuginfo_rip(addr, info)			
-		debuginfo_rip(rip_pointer, &info);		
-		cprintf("  rbp %016llx  rip %016llx\n" , rbp_pointer, rip_pointer);
-		uintptr_t new_rip_fn_addr = rip_pointer - info.rip_fn_addr;
-		cprintf("       %s:%d:  %s+%016llx  args:%d  ",
-				info.rip_file,
-				info.rip_line,
-				info.rip_fn_name,
-				new_rip_fn_addr,
-				info.rip_fn_narg);
-
-		
-		for(i = 1; i <= info.rip_fn_narg; i++){
-			uint64_t a =  (*(rbp_pointer - i))>>32 ;
-			cprintf("%016llx ",a);
-			}
-		cprintf("\n");
-		rip_pointer =  *(rbp_pointer + 1);
-		rbp_pointer =  (uint64_t*) *rbp_pointer;
-	}
-	
-
 	return 0;
 }
 
@@ -155,6 +119,8 @@ monitor(struct Trapframe *tf)
 	cprintf("Welcome to the JOS kernel monitor!\n");
 	cprintf("Type 'help' for a list of commands.\n");
 
+	if (tf != NULL)
+		print_trapframe(tf);
 
 	while (1) {
 		buf = readline("K> ");
@@ -163,7 +129,3 @@ monitor(struct Trapframe *tf)
 				break;
 	}
 }
-
-
-
-
