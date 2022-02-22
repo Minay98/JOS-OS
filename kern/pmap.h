@@ -8,6 +8,8 @@
 
 #include <inc/memlayout.h>
 #include <inc/assert.h>
+struct Env;
+
 
 extern char bootstacktop[], bootstack[];
 
@@ -58,6 +60,11 @@ struct PageInfo *page_lookup(pml4e_t *pml4e, void *va, pte_t **pte_store);
 void	page_decref(struct PageInfo *pp);
 
 void	tlb_invalidate(pml4e_t *pml4e, void *va);
+
+void *	mmio_map_region(physaddr_t pa, size_t size);
+
+int	user_mem_check(struct Env *env, const void *va, size_t len, int perm);
+void	user_mem_assert(struct Env *env, const void *va, size_t len, int perm);
 
 static inline ppn_t
 page2ppn(struct PageInfo *pp)
