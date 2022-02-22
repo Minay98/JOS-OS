@@ -10,7 +10,6 @@
 #include <inc/assert.h>
 struct Env;
 
-
 extern char bootstacktop[], bootstack[];
 
 extern struct PageInfo *pages;
