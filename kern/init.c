@@ -18,7 +18,6 @@
 #include <kern/cpu.h>
 #include <kern/spinlock.h>
 
-
 uint64_t end_debug;
 
 static void boot_aps(void);
@@ -87,7 +86,6 @@ i386_init(void)
 
 	// Schedule and run the first user environment!
 	sched_yield();
-
 }
 
 // While boot_aps is booting a given CPU, it communicates the per-core
