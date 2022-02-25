@@ -39,7 +39,6 @@ static struct Env *env_free_list;	// Free environment list
 // definition of gdt specifies the Descriptor Privilege Level (DPL)
 // of that descriptor: 0 for kernel and 3 for user.
 //
-
 struct Segdesc gdt[2*NCPU + 5] =
 
 {
@@ -128,6 +127,7 @@ env_init(void)
 	// Set up envs array
 	// LAB 3: Your code here.
 
+
 	struct Env *current = NULL;
 	int i;
 	for(i=0;i<NENV;i++)
@@ -140,6 +140,7 @@ env_init(void)
 			env_free_list=envs;
 		current = &envs[i];
 	}
+
 
 	// Per-CPU part of the initialization
 	env_init_percpu();
@@ -206,6 +207,7 @@ env_setup_vm(struct Env *e)
 	//    - The functions in kern/pmap.h are handy.
 
 	// LAB 3: Your code here.
+
 
 
 	// UVPT maps the env's own page table read-only.
@@ -293,7 +295,8 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
 	env_free_list = e->env_link;
 	*newenv_store = e;
 
-	cprintf("[%08x] new env %08x\n", curenv ? curenv->env_id : 0, e->env_id);
+	// cprintf("[%08x] new env %08x\n", curenv ? curenv->env_id : 0, e->env_id);
+
 	return 0;
 }
 
@@ -314,6 +317,7 @@ region_alloc(struct Env *e, void *va, size_t len)
 	//   'va' and 'len' values that are not page-aligned.
 	//   You should round va down, and round (va + len) up.
 	//   (Watch out for corner-cases!)
+
 
 	struct PageInfo *page;
 	uintptr_t start_page=ROUNDDOWN((uintptr_t)va,PGSIZE);
@@ -365,6 +369,7 @@ region_alloc(struct Env *e, void *va, size_t len)
 void
 load_icode(struct Env *e, uint8_t *binary)
 {
+
 
   // Hints:
   //  Load each program segment into virtual memory
@@ -443,6 +448,8 @@ env_create(uint8_t *binary, enum EnvType type)
 {
 	// LAB 3: Your code here.
 
+	// If this is the file server (type == ENV_TYPE_FS) give it I/O privileges.
+	// LAB 5: Your code here.
 	struct Env *new;
 	int result;
 	result=env_alloc(&new,0);
@@ -473,7 +480,8 @@ env_free(struct Env *e)
 		lcr3(boot_cr3);
 
 	// Note the environment's demise.
-	cprintf("[%08x] free env %08x\n", curenv ? curenv->env_id : 0, e->env_id);
+	// cprintf("[%08x] free env %08x\n", curenv ? curenv->env_id : 0, e->env_id);
+
 
 	// Flush all mapped pages in the user portion of the address space
 	if (e->env_pml4e[0] & PTE_P) {
@@ -605,6 +613,7 @@ env_run(struct Env *e)
 	//	e->env_tf to sensible values.
 
 	// LAB 3: Your code here.
+
 
 	if(curenv && curenv->env_status==ENV_RUNNING)
 			curenv->env_status=ENV_RUNNABLE;

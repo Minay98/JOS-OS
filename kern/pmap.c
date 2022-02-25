@@ -181,7 +181,6 @@ i386_detect_memory(void)
 // --------------------------------------------------------------
 
 static void mem_init_mp(void);
-
 static void boot_map_region(pml4e_t *pml4e, uintptr_t va, size_t size, physaddr_t pa, int perm);
 static void check_page_free_list(bool only_low_memory);
 static void check_page_alloc(void);
@@ -224,6 +223,7 @@ boot_alloc(uint32_t n)
 	// LAB 2: Your code here.
 
 
+
 	if ((uint64_t)(nextfree + n) > (npages * PGSIZE + KERNBASE))
 	{
 		panic("out of memory in boot_alloc");
@@ -257,7 +257,6 @@ x64_vm_init(void)
 	//////////////////////////////////////////////////////////////////////
 	// create initial page directory.
 	panic("x64_vm_init: this function is not finished\n");
-
 	pml4e = boot_alloc(PGSIZE);
 	memset(pml4e, 0, PGSIZE);
 	boot_pml4e = pml4e;
@@ -269,6 +268,7 @@ x64_vm_init(void)
 	// each physical page, there is a corresponding struct PageInfo in this
 	// array.  'npages' is the number of physical pages in memory.
 	// Your code goes here:
+
 
 pages = (struct PageInfo*)boot_alloc(sizeof(struct PageInfo)*npages);
 	//////////////////////////////////////////////////////////////////////
@@ -292,6 +292,7 @@ envs = (struct Env*)boot_alloc(sizeof(struct Env)*NENV);
 	//    - pages itself -- kernel RW, user NONE
 	// Your code goes here:
 
+
 size_t size = ROUNDUP(npages*(sizeof(struct PageInfo)), PGSIZE);	
 	boot_map_region(boot_pml4e, UPAGES, size, PADDR(pages), PTE_U|PTE_P);
 
@@ -302,6 +303,7 @@ size_t size = ROUNDUP(npages*(sizeof(struct PageInfo)), PGSIZE);
 	//    - the new image at UENVS  -- kernel R, user R
 	//    - envs itself -- kernel RW, user NONE
 	// LAB 3: Your code here.
+
 
 size_t env_size=ROUNDUP(NENV*(sizeof(struct Env)),PGSIZE);	
 	boot_map_region(boot_pml4e, UENVS, env_size,PADDR(envs),PTE_U|PTE_P);
@@ -316,6 +318,7 @@ size_t env_size=ROUNDUP(NENV*(sizeof(struct Env)),PGSIZE);
 	//       overwrite memory.  Known as a "guard page".
 	//     Permissions: kernel RW, user NONE
 	// Your code goes here:
+
 
 boot_map_region(boot_pml4e, KSTACKTOP-KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_P|PTE_W);
 	//////////////////////////////////////////////////////////////////////
@@ -420,6 +423,7 @@ page_init(void)
 		pages[i].pp_ref = 0;
 		pages[i].pp_link = NULL;
 
+
 		if(i>1 && last)
 			last->pp_link = &pages[i];
 		else
@@ -451,6 +455,7 @@ struct PageInfo *
 page_alloc(int alloc_flags)
 {
 	// Fill this function in
+
 
 
 	struct PageInfo* first=page_free_list;
@@ -490,6 +495,7 @@ page_free(struct PageInfo *pp)
 	// Fill this function in
 	// Hint: You may want to panic if pp->pp_ref is nonzero or
 	// pp->pp_link is not NULL.
+
 
 
 	struct PageInfo *first=page_free_list;
@@ -538,6 +544,7 @@ page_decref(struct PageInfo* pp)
 pte_t *
 pml4e_walk(pml4e_t *pml4e, const void *va, int create)
 {
+
 
 
         struct PageInfo *NPDPE=NULL;
@@ -590,6 +597,7 @@ pml4e_walk(pml4e_t *pml4e, const void *va, int create)
 // Hints are the same as in pml4e_walk
 pte_t *
 pdpe_walk(pdpe_t *pdpe,const void *va,int create){
+
 
 
 
@@ -648,6 +656,7 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 {
 
 
+
 	// Fill this function in
 	
 
@@ -694,6 +703,7 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 // This function is only intended to set up the ``static'' mappings
 
 
+
 // in the page table rooted at pml4e. Size is a multiple of PGSIZE.
 // Use permission bits perm|PTE_P for the entries.
 //// This function is only intended to set up the ``static'' mappings
@@ -707,6 +717,7 @@ static void
 boot_map_region(pml4e_t *pml4e, uintptr_t la, size_t size, physaddr_t pa, int perm)
 {
 	// Fill this function in
+
 
 
 	pte_t *PTE;
@@ -804,6 +815,7 @@ struct PageInfo *
 page_lookup(pml4e_t *pml4e, void *va, pte_t **pte_store)
 {
 	// Fill this function in
+
 
 
 
@@ -933,6 +945,7 @@ int
 user_mem_check(struct Env *env, const void *va, size_t len, int perm)
 {
 	// LAB 3: Your code here.
+
 
 	user_mem_check_addr = (uintptr_t) va; 
 	uintptr_t start_addr=(uintptr_t)va;
@@ -1189,7 +1202,6 @@ check_boot_pml4e(pml4e_t *pml4e)
 		for (i = 0; i < KSTKGAP; i += PGSIZE)
 			assert(check_va2pa(pml4e, base + i) == ~0);
 	}
-
 
 	pdpe_t *pdpe = KADDR(PTE_ADDR(boot_pml4e[1]));
 	pde_t  *pgdir = KADDR(PTE_ADDR(pdpe[0]));

@@ -77,6 +77,7 @@ trap_init(void)
 
 	// LAB 3: Your code here.
 
+
 	
 	extern void TRAPH_DIVIDE();
 	extern void TRAPH_DEBUG();
@@ -218,6 +219,7 @@ trap_dispatch(struct Trapframe *tf)
 {
 	// Handle processor exceptions.
 	// LAB 3: Your code here.
+
   switch(tf->tf_trapno)
 	{
 		case T_PGFLT:	page_fault_handler(tf);
@@ -241,6 +243,9 @@ trap_dispatch(struct Trapframe *tf)
 	// Handle clock interrupts. Don't forget to acknowledge the
 	// interrupt using lapic_eoi() before calling the scheduler!
 	// LAB 4: Your code here.
+
+	// Handle keyboard and serial interrupts.
+	// LAB 5: Your code here.
 
 
 	// Unexpected trap: The user process or the kernel has a bug.
@@ -290,6 +295,7 @@ trap(struct Trapframe *tf)
 			sched_yield();
 		}
 
+
 /* lab3 code
 	cprintf("Incoming TRAP frame at %p\n", tf);
 
@@ -320,6 +326,7 @@ trap(struct Trapframe *tf)
 		env_run(curenv);
 	else
 		sched_yield();
+
 /*lab3 code
 	// Return to the current environment, which should be running.
 	assert(curenv && curenv->env_status == ENV_RUNNING);
@@ -339,6 +346,7 @@ page_fault_handler(struct Trapframe *tf)
 	// Handle kernel-mode page faults.
 
 	// LAB 3: Your code here.
+
 
 	if((tf->tf_cs & 3)==0)
 	panic("page fault is kernel mode");
