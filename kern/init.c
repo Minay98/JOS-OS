@@ -17,10 +17,13 @@
 #include <kern/picirq.h>
 #include <kern/cpu.h>
 #include <kern/spinlock.h>
+#include <kern/env.h>
+#include <kern/trap.h>
+
+static void boot_aps(void);
 
 uint64_t end_debug;
 
-static void boot_aps(void);
 
 
 
@@ -118,6 +121,7 @@ boot_aps(void)
 			;
 	}
 }
+
 
 // Setup code for APs
 void

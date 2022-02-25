@@ -146,6 +146,7 @@ include fs/Makefrag
 
 
 
+
 CPUS ?= 1
 
 ## We need KVM for qemu to export VMX
@@ -155,6 +156,7 @@ IMAGES = $(OBJDIR)/kern/kernel.img
 QEMUOPTS += -smp $(CPUS)
 QEMUOPTS += -hdb $(OBJDIR)/fs/fs.img
 IMAGES += $(OBJDIR)/fs/fs.img
+
 QEMUOPTS += $(QEMUEXTRA)
 
 
@@ -169,7 +171,7 @@ qemu: $(IMAGES) pre-qemu
 	$(QEMU) $(QEMUOPTS)
 
 qemu-nox: $(IMAGES) pre-qemu
-	@echo "***"
+	@echo "***";
 	@echo "*** Use Ctrl-a x to exit qemu"
 	@echo "***"
 	$(QEMU) -nographic $(QEMUOPTS)

@@ -16,6 +16,7 @@
 #include <kern/console.h>
 #include <kern/sched.h>
 
+
 // Print a string to the system console.
 // The string is exactly 'len' characters long.
 // Destroys the environment on memory errors.
@@ -26,6 +27,9 @@ sys_cputs(const char *s, size_t len)
 	// Destroy the environment if not.
 
 	// LAB 3: Your code here.
+
+
+	user_mem_assert(curenv, (const void *)s, len, PTE_P | PTE_U);	
 
 	// Print the string supplied by the user.
 	cprintf("%.*s", len, s);
@@ -59,6 +63,11 @@ sys_env_destroy(envid_t envid)
 
 	if ((r = envid2env(envid, &e, 1)) < 0)
 		return r;
+
+	if (e == curenv)
+		cprintf("[%08x] exiting gracefully\n", curenv->env_id);
+	else
+		cprintf("[%08x] destroying %08x\n", curenv->env_id, e->env_id);
 	env_destroy(e);
 	return 0;
 }
@@ -122,6 +131,7 @@ sys_env_set_trapframe(envid_t envid, struct Trapframe *tf)
 	// address!
 	panic("sys_env_set_trapframe not implemented");
 }
+
 
 // Set the page fault upcall for 'envid' by modifying the corresponding struct
 // Env's 'env_pgfault_upcall' field.  When 'envid' causes a page fault, the
@@ -299,9 +309,21 @@ syscall(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, 
 	// Return any appropriate return value.
 	// LAB 3: Your code here.
 
-	panic("syscall not implemented");
+	//panic("syscall not implemented");
 
 	switch (syscallno) {
+
+
+		case SYS_cputs :
+                	sys_cputs((const char *)a1, (size_t)a2);
+                	return 0;
+        	case SYS_cgetc :
+                	return sys_cgetc();
+        	case SYS_getenvid :
+                	return sys_getenvid();
+        	case SYS_env_destroy :
+                	return sys_env_destroy(a1);
+
 
 	default:
 		return -E_NO_SYS;

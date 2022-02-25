@@ -26,6 +26,7 @@ enum {
 	E_FILE_EXISTS	= 14,	// File already exists
 	E_NOT_EXEC	= 15,	// File not a valid executable
 	E_NOT_SUPP	= 16,	// Operation not supported
+
 	// VMM error codes.
 	E_NO_VMX = 17,    // The processor doesn't support VMX or 
 	// is turned off in the BIOS
